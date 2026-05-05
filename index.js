@@ -1,11 +1,12 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require('@vercel/kv');
 const app = express();
-const PORT = process.env.PORT || 10000;
 
-// 统计文件路径
-const countFile = path.join(__dirname, 'count.json');
+// 连接免费云存储（替代 count.json）
+const kv = createClient({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 // 允许小程序跨域
 app.use((req, res, next) => {
@@ -13,23 +14,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// 读取并自增访问数
-app.get('/', (req, res) => {
+// 访问计数接口
+app.get('/', async (req, res) => {
   try {
-    // 读取
-    let data = JSON.parse(fs.readFileSync(countFile, 'utf8'));
-    data.count += 1;
-    
-    // 写入
-    fs.writeFileSync(countFile, JSON.stringify(data, null, 2));
-    
-    // 返回
-    res.json({ count: data.count });
+    // 访问一次 +1，永久保存，不会清零
+    const count = await kv.incr('visit_count');
+    res.json({ count: count });
   } catch (err) {
     res.json({ count: 0 });
   }
 });
 
-app.listen(PORT, () => {
-  console.log('服务启动');
-});
+// Vercel 必须导出 app，不能 listen
+module.exports = app;
