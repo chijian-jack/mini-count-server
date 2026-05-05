@@ -1,5 +1,5 @@
 {
-  "name": "wx-count",
+  "name": "mini-count-server",
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
